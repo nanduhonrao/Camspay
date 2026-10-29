@@ -49,5 +49,29 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
+// Returns this server's outbound IP (as seen by an external service)
+app.get('/ip', (req, res) => {
+  const options = {
+    hostname: 'api.ipify.org',
+    path: '/?format=json',
+    method: 'GET',
+  };
+  const ipReq = https.request(options, (ipRes) => {
+    let data = '';
+    ipRes.on('data', (chunk) => { data += chunk; });
+    ipRes.on('end', () => {
+      try {
+        res.json(JSON.parse(data));
+      } catch(e) {
+        res.json({ ip: data.trim() });
+      }
+    });
+  });
+  ipReq.on('error', (err) => {
+    res.status(500).json({ error: err.message });
+  });
+  ipReq.end();
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log('Proxy running on port ' + PORT));
